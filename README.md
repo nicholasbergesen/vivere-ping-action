@@ -4,20 +4,26 @@ Tell a [Vivere](https://vivere.dev) monitor that a scheduled workflow ran, so th
 alerted when one does not.
 
 GitHub's own notifications tell you when a workflow **fails**. They cannot tell you when a
-workflow **stops running**, because there is no run to notify you about. That happens more
-than people expect:
+workflow **stops running**, because there is no run to notify you about. GitHub's
+[documentation for the schedule event](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+describes several ways that happens:
 
-- GitHub disables scheduled workflows in a public repository after **60 days of repository
-  inactivity**, and scheduled runs do not count as activity. A repository that exists only to
-  run a nightly job switches itself off roughly every two months.
+- In a public repository, scheduled workflows are disabled automatically when there has been
+  **no repository activity for 60 days**. A repository that exists only to run a nightly job
+  switches itself off unless somebody commits to it.
 - The `schedule` event only fires for the workflow file on the **default branch**, so a cron
-  trigger added on a branch is never scheduled.
-- Scheduled runs are queued, not guaranteed; at busy times, especially on the hour, they are
-  delayed or dropped.
-- For private repositories, exhausted Actions minutes or a spending limit stop runs starting.
+  trigger added on a branch is never scheduled. In a fork of a public repository, scheduled
+  workflows start disabled.
+- Scheduled runs can be delayed at times of high load, the start of every hour among them, and
+  some queued runs may be dropped.
+- In a private repository with no payment method, Actions usage is blocked once the included
+  minutes are used up.
+
+**[Why a GitHub Actions scheduled workflow stopped running](https://vivere.dev/answers/github-actions-schedule-stopped)**
+goes through each cause, the commands that tell them apart, and the fix for each.
 
 This action makes the workflow check in when it succeeds. If the check-in does not arrive on
-time, Vivere alerts you — by email, webhook, Slack, Discord, Telegram or ntfy.
+time, Vivere alerts you by email, webhook, Slack, Discord, Telegram or ntfy.
 
 ## Usage
 
@@ -29,7 +35,7 @@ secret (Settings → Secrets and variables → Actions).
 name: Nightly export
 on:
   schedule:
-    - cron: '17 2 * * *'   # an odd minute: :00 is the busiest and the most delayed
+    - cron: '17 2 * * *'   # an odd minute: GitHub names the start of the hour as a busy time
   workflow_dispatch:
 
 jobs:
@@ -128,7 +134,7 @@ Anything in `log` is stored with the run and shown beside the failure. Vivere ke
 ## Why `fail-on-error` is off by default
 
 A monitoring call is not worth breaking a build over, and a ping that never arrives raises
-an alert by itself — which is the outcome you wanted from the failure anyway. Turn it on if
+an alert by itself, which is the outcome you wanted from the failure anyway. Turn it on if
 you would rather find out about a broken ping URL immediately.
 
 ## Keep the URL in a secret
@@ -149,9 +155,11 @@ curl -fsS -m 10 --retry 3 -o /dev/null https://vivere.dev/p/<monitor-id>
 
 ## Links
 
-- [Vivere](https://vivere.dev) — free for 10 monitors, no card
+- [Vivere](https://vivere.dev): free for 25 monitors, no card
 - [GitHub Actions guide](https://vivere.dev/docs/github-actions)
 - [Why a scheduled workflow stops running](https://vivere.dev/answers/github-actions-schedule-stopped)
+- [Scheduled workflow disabled after 60 days](https://vivere.dev/answers/github-actions-workflow-disabled-inactivity)
+- [Scheduled workflow runs late or is skipped](https://vivere.dev/answers/github-actions-schedule-delayed)
 - [Choosing a grace period](https://vivere.dev/tools/grace-period)
 
 ## Licence
